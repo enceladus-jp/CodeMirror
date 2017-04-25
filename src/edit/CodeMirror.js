@@ -144,7 +144,7 @@ function registerEventHandlers(cm) {
   on(d.scroller, "touchstart", e => {
     // 追加 ios時compositionendよりblurが先に
     // 発生する場合があるため当該処理を除外
-    if (cm.display.input.composing) {
+    if (ios && cm.display.input.composing) {
         cm.display.input.textarea.blur() ;
         // ensureCursorVisible(cm)
         e.preventDefault() ;

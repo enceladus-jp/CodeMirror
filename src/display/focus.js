@@ -2,6 +2,7 @@ import { restartBlink } from "./selection"
 import { webkit } from "../util/browser"
 import { addClass, rmClass } from "../util/dom"
 import { signal } from "../util/event"
+import { ios } from "../util/browser"
 
 export function ensureFocus(cm) {
   if (!cm.state.focused) { cm.display.input.focus(); onFocus(cm) }
@@ -35,6 +36,14 @@ export function onFocus(cm, e) {
   restartBlink(cm)
 }
 export function onBlur(cm, e) {
+  // 追加 ios compositionend発火が遅く
+  // blurが先に発生するため以下の処理は行わない
+  if (ios) {
+    if(cm.display.input.composing) {
+      return ;
+    }
+  }
+  // ここまで
   if (cm.state.delayingBlurEvent) return
 
   if (cm.state.focused) {

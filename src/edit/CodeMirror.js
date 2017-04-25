@@ -15,6 +15,7 @@ import { extendSelection } from "../model/selection_updates"
 import { captureRightClick, ie, ie_version, mobile, webkit } from "../util/browser"
 import { e_preventDefault, e_stop, on, signal, signalDOMEvent } from "../util/event"
 import { bind, copyObj, Delayed } from "../util/misc"
+import { ios } from "../util/browser"
 
 import { clearDragCursor, onDragOver, onDragStart, onDrop } from "./drop_events"
 import { ensureGlobalHandlers } from "./global_events"
@@ -141,6 +142,15 @@ function registerEventHandlers(cm) {
     return dx * dx + dy * dy > 20 * 20
   }
   on(d.scroller, "touchstart", e => {
+    // 追加 ios時compositionendよりblurが先に
+    // 発生する場合があるため当該処理を除外
+    if (ios && cm.display.input.composing) {
+        cm.display.input.textarea.blur() ;
+        // ensureCursorVisible(cm)
+        e.preventDefault() ;
+        e.stopPropagation() ;
+        return false ;
+    } ;
     if (!signalDOMEvent(cm, e) && !isMouseLikeTouchEvent(e)) {
       clearTimeout(touchFinished)
       let now = +new Date
@@ -166,9 +176,22 @@ function registerEventHandlers(cm) {
         range = cm.findWordAt(pos)
       else // Triple tap
         range = new Range(Pos(pos.line, 0), clipPos(cm.doc, Pos(pos.line + 1, 0)))
+        // 追加 touchendのfocus終了を遅延実行 
+        // startの遅延実行待ち
+        if (ios){
+          setTimeout(() => {
+                cm.setSelection(range.anchor, range.head)
+                cm.focus()
+              }, 30);
+        } else {
+          cm.setSelection(range.anchor, range.head)
+          cm.focus()
+          e_preventDefault(e)
+        }/*
       cm.setSelection(range.anchor, range.head)
       cm.focus()
       e_preventDefault(e)
+*/
     }
     finishTouch()
   })
